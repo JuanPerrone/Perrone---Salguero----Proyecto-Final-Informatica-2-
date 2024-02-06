@@ -1,82 +1,83 @@
 import processing.serial.*;
-Serial puertoSerie;
 
-int posicionPatineta = 400;  // Posición inicial de la patineta
-int anchoPatineta = 80;      // Ancho inicial de la patineta
-int alturaPatineta = 20;     // Alto inicial de la patineta
-int puntaje = 0;
-int posicionPelotaX, posicionPelotaY;
-boolean pelotaCapturada = false;
-boolean finJuego = false;
+Serial miPuerto;  // Objeto Serial para la comunicación con Arduino
+int diametroPelota = 40;
+int anchoPatineta = 80;
+int altoPatineta = 20;
+int estadoMenu;
+boolean confirmarPresionado;
+
+class Menu {
+  public
+  void dibujar() {
+    // Título
+    fill(0);
+    textSize(32);
+    textAlign(CENTER, CENTER);
+    text("LA CANASTA", width / 2, height / 4);
+
+    // Botón "Jugar"
+    if (estadoMenu == 1) {
+      fill(255, 0, 0);
+    } else {
+      fill(0, 255, 0);
+    }
+    rect(width / 4, height / 2, width / 2, 50);
+
+    fill(0);
+    textSize(24);
+    textAlign(CENTER, CENTER);
+    text("Jugar", width / 2, height / 2 + 25);
+
+    // Botón "Records"
+    if (estadoMenu == 2) {
+      fill(255, 0, 0);
+    } else {
+      fill(0, 255, 0);
+    }
+    rect(width / 4, height / 2 + 60, width / 2, 50);
+
+    fill(0);
+    text("Records", width / 2, height / 2 + 85);
+  }
+}
+
+Menu menu;
 
 void setup() {
+  for (String puerto : Serial.list()) {
+   println("Puerto disponible: " + puerto);
+   }
   size(800, 600);
-  textAlign(CENTER);
-  textSize(40);
-  puertoSerie = new Serial(this, "COM3", 9600);
-  resetearJuego();
+  String estePuerto = Serial.list()[1];
+  miPuerto = new Serial(this, estePuerto, 9600);
+  menu = new Menu(); // Inicializa la instancia de la clase Menu
 }
 
 void draw() {
   background(255);
-  
-  // Dibujar pelota
-  ellipse(posicionPelotaX, posicionPelotaY, 40, 40);
-  
-  // Dibujar patineta
-  fill(0);
-  rect(posicionPatineta - anchoPatineta / 2, height - alturaPatineta, anchoPatineta, alturaPatineta);
-  
-  // Mostrar puntaje
-  fill(0);
-  text("Puntaje: " + puntaje, width/2, 100);  // Texto centrado
-  
-  if (finJuego) {
-    fill(255, 0, 0);
-    text("Fin del juego\nPuntaje: " + puntaje + "\nPresiona 'R' para reiniciar", width/2, height/2);
-  } else {
-    actualizarJuego(); // Actualizar el juego en cada fotograma
-  }
-}
 
-void resetearJuego() {
-  pelotaCapturada = false;
-  posicionPelotaX = int(random(40, width - 40));  // Posición aleatoria, teniendo en cuenta el tamaño
-  posicionPelotaY = 0;
-}
-
-void dejarCaerPelota() {
-  posicionPelotaY += 5; // Velocidad de caída de la pelota
-  
-  if (posicionPelotaY > height - alturaPatineta && 
-      abs(posicionPelotaX - posicionPatineta) < anchoPatineta / 2 + 20) {  // Ajuste para colisión
-    if (!pelotaCapturada) {
-      puntaje++;
-      pelotaCapturada = true;
-      resetearJuego();
+  // Lee datos del puerto serial
+  if (miPuerto.available() > 0) {
+    String info = miPuerto.readStringUntil('\n');
+    println("Info recibida: " + info);
+    if (info != null) {
+      // Divide los datos en partes
+      String[] partes = split(trim(info), ',');
+      if (partes.length == 2) {
+        estadoMenu = int(partes[0]);
+        confirmarPresionado = partes[1].equals("1");
+        
+        println("estadoMenu: " + estadoMenu);
+        println("confirmarPresionado: " + confirmarPresionado);
+      }
     }
-  } else if (posicionPelotaY > height - alturaPatineta) {
-    finJuego = true;
   }
-}
+  if (confirmarPresionado != true) {
+    // Dibuja el menú
+    menu.dibujar();
+  } else {
 
-void serialEvent(Serial puertoSerie) {
-  String mensaje = puertoSerie.readStringUntil('\n');
-  if (mensaje != null) {
-    mensaje = trim(mensaje);
-    posicionPatineta = Integer.parseInt(mensaje);
   }
-}
-
-void keyPressed() {
-  if (finJuego && key == 'r') {
-    finJuego = false;
-    puntaje = 0;
-    posicionPatineta = 400; // Posición inicial de la patineta
-    resetearJuego();
-  }
-}
-
-void actualizarJuego() {
-  dejarCaerPelota();
+  delay(50);
 }
