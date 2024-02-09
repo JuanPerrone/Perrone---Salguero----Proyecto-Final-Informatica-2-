@@ -1,6 +1,6 @@
 const int pinBotonIzquierda = 2;
 const int pinBotonDerecha = 3;
-const int pinConfirmarPausa = 4;
+const int pinConfirmar = 4;
 
 const int pinLedIzquierda = 5;
 const int pinLedDerecha = 6;
@@ -32,18 +32,18 @@ public:
   void actualizar() {
     int estadoBotonIzquierda = digitalRead(pinBotonIzquierda);
     int estadoBotonDerecha = digitalRead(pinBotonDerecha);
-    int estadoConfirmarPausa = digitalRead(pinConfirmarPausa);
+    int estadoConfirmar = digitalRead(pinConfirmar);
 
     digitalWrite(pinLedIzquierda, estadoBotonIzquierda);
     digitalWrite(pinLedDerecha, estadoBotonDerecha);
-    digitalWrite(pinLedConfirmar, estadoConfirmarPausa);
+    digitalWrite(pinLedConfirmar, estadoConfirmar);
 
     if (confirmarPresionado == false) {
       if (estadoBotonIzquierda == HIGH) {
         estadoActualMenu = JUGAR;
       } else if (estadoBotonDerecha == HIGH) {
         estadoActualMenu = RECORDS;
-      } else if (estadoConfirmarPausa == HIGH) {
+      } else if (estadoConfirmar == HIGH) {
         confirmarPresionado = true;
       }
     }
@@ -179,7 +179,7 @@ Juego juego(menu);
 void setup() {
   pinMode(pinBotonIzquierda, INPUT);
   pinMode(pinBotonDerecha, INPUT);
-  pinMode(pinConfirmarPausa, INPUT);
+  pinMode(pinConfirmar, INPUT);
 
   pinMode(pinLedIzquierda, OUTPUT);
   pinMode(pinLedDerecha, OUTPUT);
@@ -209,8 +209,6 @@ void loop() {
   Serial.print(juego.obtenerPosicionPelotaY());
   Serial.print(",");
   Serial.print(juego.obtenerPuntaje());
-  Serial.print(",");
-  Serial.print(juego.obtenerIntroducirNombre());
   Serial.println();
   delay(50);
 }
