@@ -12,62 +12,6 @@ int posicionPelotaX;
 int posicionPelotaY;
 int puntaje;
 
-class Menu {
-  public
-  void dibujar() {
-    // Título
-    fill(0);
-    textSize(32);
-    textAlign(CENTER, CENTER);
-    text("LA CANASTA", width / 2, height / 4);
-
-    // Botón "Jugar"
-    if (estadoMenu == 1) {
-      fill(255, 0, 0);
-    } else {
-      fill(0, 255, 0);
-    }
-    rect(width / 4, height / 2, width / 2, 50);
-
-    fill(0);
-    textSize(24);
-    textAlign(CENTER, CENTER);
-    text("Jugar", width / 2, height / 2 + 25);
-
-    // Botón "Records"
-    if (estadoMenu == 2) {
-      fill(255, 0, 0);
-    } else {
-      fill(0, 255, 0);
-    }
-    rect(width / 4, height / 2 + 60, width / 2, 50);
-
-    fill(0);
-    text("Records", width / 2, height / 2 + 85);
-  }
-}
-
-class Juego {
-  public void dibujar() {
-    // Dibuja la patineta
-    fill(0, 0, 255); // Azul
-    rect(posicionPatineta, height - altoPatineta, anchoPatineta, altoPatineta);
-
-    // Dibuja la pelota
-    fill(255, 0, 0); // Rojo
-    ellipse(posicionPelotaX, posicionPelotaY, diametroPelota, diametroPelota);
-
-    // Muestra el puntaje
-    fill(0);
-    textSize(20);
-    textAlign(RIGHT, TOP);
-    text("Puntaje: " + puntaje, width - 10, 10);
-  }
-}
-
-Menu menu;
-Juego juego;
-
 void setup() {
   /*for (String puerto : Serial.list()) {
    println("Puerto disponible: " + puerto);
@@ -75,8 +19,6 @@ void setup() {
   size(800, 600);
   String estePuerto = Serial.list()[1];
   miPuerto = new Serial(this, estePuerto, 9600);
-  menu = new Menu(); // Inicializa la instancia de la clase Menu
-  juego = new Juego(); // Inicializa la instancia de la clase Juego
 }
 
 void draw() {
@@ -102,8 +44,56 @@ void draw() {
   }
   // Dibuja el juego o el menú según el estado
   if (estadoDelJuego == true) {
-    juego.dibujar(); // Dibuja el juego
+    dibujarJuego();
   } else {
-    menu.dibujar(); // Dibuja el menú
+    dibujarMenu();
   }
+}
+
+void dibujarMenu() {
+  // Título
+  fill(0);
+  textSize(32);
+  textAlign(CENTER, CENTER);
+  text("LA CANASTA", width / 2, height / 4);
+
+  // Botón "Jugar"
+  if (estadoMenu == 1) {
+    fill(255, 0, 0);
+  } else {
+    fill(0, 255, 0);
+  }
+  rect(width / 4, height / 2, width / 2, 50);
+
+  fill(0);
+  textSize(24);
+  textAlign(CENTER, CENTER);
+  text("Jugar", width / 2, height / 2 + 25);
+
+  // Botón "Records"
+  if (estadoMenu == 2) {
+    fill(255, 0, 0);
+  } else {
+    fill(0, 255, 0);
+  }
+  rect(width / 4, height / 2 + 60, width / 2, 50);
+
+  fill(0);
+  text("Records", width / 2, height / 2 + 85);
+}
+
+void dibujarJuego() {
+  // Dibuja la patineta
+  fill(0, 0, 255); // Azul
+  rect(posicionPatineta, height - altoPatineta, anchoPatineta, altoPatineta);
+
+  // Dibuja la pelota
+  fill(255, 0, 0); // Rojo
+  ellipse(posicionPelotaX, posicionPelotaY, diametroPelota, diametroPelota);
+
+  // Muestra el puntaje
+  fill(0);
+  textSize(20);
+  textAlign(RIGHT, TOP);
+  text("Puntaje: " + puntaje, width - 10, 10);
 }
