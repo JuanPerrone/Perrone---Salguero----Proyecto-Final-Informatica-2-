@@ -100,7 +100,7 @@ public:
   void reiniciarJuego() {
     if (introducirNombre == true) {
       puntaje = 0;
-      posicionPatineta = 400;
+      posicionPatineta = anchoJuego / 2 - anchoPatineta / 2;  //360
       posicionPelotaX = 0;
     }
     if (menu.obtenerEstadoMenu() == JUGAR) {
@@ -111,30 +111,37 @@ public:
 
   void moverPatineta() {
     if (digitalRead(pinBotonIzquierda) == HIGH && posicionPatineta > 0) {
-      posicionPatineta -= 20;
+      posicionPatineta -= 15;
     } else if (digitalRead(pinBotonDerecha) == HIGH && posicionPatineta < anchoJuego - anchoPatineta) {
-      posicionPatineta += 20;
+      posicionPatineta += 15;
     }
   }  //Lee el estado de los botones de la patineta y mueve la patineta.
 
   void moverPelota() {
     if (primeraIteracion == true) {
       posicionPelotaY = 0;
-      posicionPelotaX = random(0, anchoJuego - diametroPelota);
+      posicionPelotaX = random(diametroPelota / 2, anchoJuego - diametroPelota / 2);
     } else {
-      posicionPelotaY += 15;
+      //if (puntaje < 4) {
+      posicionPelotaY += 10;
+      /*} else {
+        posicionPelotaY += ;
+      }*/
       verificarColision();
+      //}
     }
     primeraIteracion = false;
   }  //Controla el movimiento de la pelota en el juego y la detección de colisiones .
 
   void verificarColision() {
-    if (posicionPelotaY > altoJuego) {
+    if (posicionPelotaY + diametroPelota / 2 > altoJuego) {
       introducirNombre = true;
     }
-    if (posicionPelotaY + diametroPelota > altoJuego - altoPatineta && posicionPelotaX > posicionPatineta && posicionPelotaX < posicionPatineta + anchoPatineta) {
+    if (posicionPelotaY + diametroPelota / 2 > altoJuego - altoPatineta
+        && posicionPatineta + anchoPatineta > posicionPelotaX - diametroPelota / 2
+        && posicionPatineta < posicionPelotaX + diametroPelota / 2) {
       puntaje++;
-      posicionPelotaX = random(0, anchoJuego - diametroPelota);
+      posicionPelotaX = random(diametroPelota / 2, anchoJuego - diametroPelota / 2);
       reiniciarJuego();
     }
   }  //Comprueba si ha ocurrido alguna colisión entre la pelota y la patineta.
@@ -248,5 +255,5 @@ void loop() {
   Serial.print(",");
   Serial.print(juego.obtenerIntroducirNombre());
   Serial.println();
-  delay(50);
+  delay(30);
 }
