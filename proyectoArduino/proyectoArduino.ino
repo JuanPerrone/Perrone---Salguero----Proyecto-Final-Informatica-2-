@@ -1,3 +1,10 @@
+/*
+Funcionamiento de la aleatoriedad de la posicion X de la pelota:
+randomSeed(analogRead(0)) establece la semilla para la generación de números aleatorios basada en el valor analógico 
+leído en el pin 0 de Arduino, lo que ayuda a mejorar la aleatoriedad de los números generados por la función random(),
+por lo tanto la variable: posicionPelotaX = random(min, max), tomará como minimo el valor de "min" y como maximo "max".
+*/
+
 const int pinBotonIzquierda = 2;
 const int pinBotonDerecha = 3;
 const int pinConfirmar = 4;
@@ -11,6 +18,21 @@ const int altoJuego = 600;
 const int anchoPatineta = 80;
 const int altoPatineta = 20;
 const int diametroPelota = 40;
+
+int segmentos[7] = { 8, 9, 10, 11, 12, 13, A1 };
+int numeroDigitos[11][7] = {
+  { 1, 1, 1, 1, 1, 1, 0 },  // 0
+  { 0, 1, 1, 0, 0, 0, 0 },  // 1
+  { 1, 1, 0, 1, 1, 0, 1 },  // 2
+  { 1, 1, 1, 1, 0, 0, 1 },  // 3
+  { 0, 1, 1, 0, 0, 1, 1 },  // 4
+  { 1, 0, 1, 1, 0, 1, 1 },  // 5
+  { 1, 0, 1, 1, 1, 1, 1 },  // 6
+  { 1, 1, 1, 0, 0, 0, 0 },  // 7
+  { 1, 1, 1, 1, 1, 1, 1 },  // 8
+  { 1, 1, 1, 1, 0, 1, 1 },  // 9
+  { 0, 0, 0, 0, 0, 0, 1 }   // -
+};
 
 enum EstadoMenu {
   NINGUNO,
@@ -129,9 +151,9 @@ public:
       }*/
       verificarColision();
       //}
-    }
+    }  
     primeraIteracion = false;
-  }  //Controla el movimiento de la pelota en el juego y la detección de colisiones .
+  } //Controla el movimiento de la pelota en el juego y la detección de colisiones .
 
   void verificarColision() {
     if (posicionPelotaY + diametroPelota / 2 > altoJuego) {
@@ -220,6 +242,11 @@ void setup() {
   pinMode(pinLedDerecha, OUTPUT);
   pinMode(pinLedConfirmar, OUTPUT);
 
+  for (int i = 0; i < 7; i++) {
+    pinMode(segmentos[i], OUTPUT);
+    digitalWrite(segmentos[i], LOW);
+  }  // Apaga todos los segmentos inicialmente
+
   // Semilla aleatoria para la generación de la pelota
   randomSeed(analogRead(0));
   // Inicialización de la comunicación serial
@@ -236,6 +263,28 @@ void loop() {
 
   if (menu.obtenerEstadoMenu() == RECORDS && menu.obtenerConfirmarPresionado() == true) {
     records.volverAlMenu();
+  }
+
+  if (Serial.available() > 0) {
+    int puntajeDisplay = Serial.read();
+
+    if (puntajeDisplay >= 0 && puntajeDisplay <= 9) {
+      for (int i = 0; i < 7; i++) {
+        if (numeroDigitos[puntajeDisplay][i] == 1) {
+          digitalWrite(segmentos[i], HIGH);
+        } else {
+          digitalWrite(segmentos[i], LOW);
+        }
+      }
+    } else {
+      for (int i = 0; i < 7; i++) {
+        if (numeroDigitos[10][i] == 1) {
+          digitalWrite(segmentos[i], HIGH);
+        } else {
+          digitalWrite(segmentos[i], LOW);
+        }
+      }
+    }
   }
 
   // Enviamos la información a través de la comunicación serial
