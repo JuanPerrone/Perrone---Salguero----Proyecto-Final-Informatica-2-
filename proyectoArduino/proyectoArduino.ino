@@ -1,23 +1,14 @@
-/*
-Funcionamiento de la aleatoriedad de la posicion X de la pelota:
-randomSeed(analogRead(0)) establece la semilla para la generación de números aleatorios basada en el valor analógico 
-leído en el pin 0 de Arduino, lo que ayuda a mejorar la aleatoriedad de los números generados por la función random(),
-por lo tanto la variable: posicionPelotaX = random(min, max), tomará como minimo el valor de "min" y como maximo "max".
-*/
+#define memoriaArray 150
 
 const int pinBotonIzquierda = 2;
 const int pinBotonDerecha = 3;
-const int pinConfirmar = 4;
+const int pinBotonConfirmar = 4;
+const int pinBotonRec = A4;
 
 const int pinLedIzquierda = 5;
 const int pinLedDerecha = 6;
 const int pinLedConfirmar = 7;
-
-const int anchoJuego = 800;
-const int altoJuego = 600;
-const int anchoPatineta = 80;
-const int altoPatineta = 20;
-const int diametroPelota = 40;
+const int pinLedRec = A5;
 
 int segmentos[7] = { 8, 9, 10, 11, 12, 13, A1 };
 int numeroDigitos[11][7] = {
@@ -37,8 +28,20 @@ int numeroDigitos[11][7] = {
 enum EstadoMenu {
   NINGUNO,
   JUGAR,
-  RECORDS
-};  //Definicion de un enumerador, EstadoMenu, con tres valores posibles.
+  RECORDS,
+  GRABACION
+};  // Definicion de un enumerador, EstadoMenu.
+
+struct DatosPartida {
+  int posicionPatinetaRec;
+  int posicionPelotaXRec;
+  int posicionPelotaYRec;
+};  // Define una estructura para almacenar los datos de cada partida - //Rec = recording = grabacion
+
+DatosPartida grabacion[memoriaArray];  // Array para almacenar las estructuras DatosPartida
+int indiceGrabacion;                   // Índice para controlar la posición en el array
+bool enviandoGrabacion = true;
+bool controlIndiceGrabacion = false;
 
 class Menu {
 private:
@@ -49,32 +52,42 @@ public:
   Menu() {
     estadoActualMenu = NINGUNO;
     confirmarPresionado = false;
-  }  //Constructor.
+  }  // Constructor.
 
   void actualizar() {
     int estadoBotonIzquierda = digitalRead(pinBotonIzquierda);
     int estadoBotonDerecha = digitalRead(pinBotonDerecha);
-    int estadoConfirmar = digitalRead(pinConfirmar);
+    int estadoBotonConfirmar = digitalRead(pinBotonConfirmar);
+    int estadoBotonRec = digitalRead(pinBotonRec);
 
     digitalWrite(pinLedIzquierda, estadoBotonIzquierda);
     digitalWrite(pinLedDerecha, estadoBotonDerecha);
-    digitalWrite(pinLedConfirmar, estadoConfirmar);
+    digitalWrite(pinLedConfirmar, estadoBotonConfirmar);
+    digitalWrite(pinLedRec, estadoBotonRec);
 
     if (confirmarPresionado == false) {
       if (estadoBotonIzquierda == HIGH) {
         estadoActualMenu = JUGAR;
       } else if (estadoBotonDerecha == HIGH) {
         estadoActualMenu = RECORDS;
-      } else if (estadoConfirmar == HIGH) {
+      } else if (estadoBotonRec == HIGH) {
+        estadoActualMenu = GRABACION;
+      } else if (estadoBotonConfirmar == HIGH) {
         confirmarPresionado = true;
+        if (estadoActualMenu == NINGUNO) {
+          confirmarPresionado = false;
+        }
+        if (estadoActualMenu == JUGAR) {
+          controlIndiceGrabacion = !controlIndiceGrabacion;
+        }
       }
     }
-  }  //Lee el estado de los botones y actualiza el estado del menú, manejo de pines por el estado de los botones.
+  }  // Lee el estado de los botones y actualiza el estado del menú, manejo de los pines de leds por el estado de los botones.
 
   void reiniciarMenu() {
     estadoActualMenu = NINGUNO;
     confirmarPresionado = false;
-  }  //Restablece el estado del menú y el estado del botón de confirmación a su valor inicial.
+  }  // Restablece el estado del menú y el estado del botón de confirmación a su valor inicial.
 
   EstadoMenu obtenerEstadoMenu() {
     return estadoActualMenu;
@@ -83,10 +96,15 @@ public:
   bool obtenerConfirmarPresionado() {
     return confirmarPresionado;
   }
-};  //Se define la clase Menu.
+};  // Se define la clse Menu.
 
 class Juego {
 private:
+  int anchoJuego = 800;
+  int altoJuego = 600;
+  int anchoPatineta = 80;
+  int altoPatineta = 20;
+  int diametroPelota = 40;
   Menu &menu;
   int puntaje;
   int posicionPatineta;
@@ -94,7 +112,6 @@ private:
   int posicionPelotaY;
   bool introducirNombre;
   bool primeraIteracion;
-  bool estadoDelJuego = false;
 
 public:
   Juego(Menu &menuReferencia)
@@ -102,34 +119,32 @@ public:
     introducirNombre = true;
     primeraIteracion = true;
     reiniciarJuego();
-  }  //Constructor, se recibe por referencia a un objeto Menu.
+  }  // Constructor, se recibe por referencia a un objeto Menu.
 
   void actualizar() {
-    if (introducirNombre == false) {
-      estadoDelJuego = true;
-      jugar();
-    } else {
-      estadoDelJuego = false;
+    if (introducirNombre == true) {
       procesarMenu();
+    } else {
+      jugar();
     }
-  }  //Controla si el juego está en modo de juego o de procesar el menu.
+  }  // Si el juego ha terminado, introducimos el nombre y procesamos el menu, sino el juego sigue.
 
   void jugar() {
     moverPatineta();
     moverPelota();
-  }  //En modo de juego se mueve la patineta y la pelota.
+  }  // Control de la patineta y la pelota durante el juego.
 
   void reiniciarJuego() {
     if (introducirNombre == true) {
       puntaje = 0;
-      posicionPatineta = anchoJuego / 2 - anchoPatineta / 2;  //360
+      posicionPatineta = anchoJuego / 2 - anchoPatineta / 2;  // posicionPatineta = 360
       posicionPelotaX = 0;
     }
     if (menu.obtenerEstadoMenu() == JUGAR) {
       posicionPelotaY = 0;
     }
     introducirNombre = false;
-  }  //Maneja las variables del juego dependiendo de cada situacion.
+  }  //Maneja las variables del juego, en caso de haber terminado la partida o no.
 
   void moverPatineta() {
     if (digitalRead(pinBotonIzquierda) == HIGH && posicionPatineta > 0) {
@@ -144,16 +159,11 @@ public:
       posicionPelotaY = 0;
       posicionPelotaX = random(diametroPelota / 2, anchoJuego - diametroPelota / 2);
     } else {
-      //if (puntaje < 4) {
       posicionPelotaY += 10;
-      /*} else {
-        posicionPelotaY += ;
-      }*/
       verificarColision();
-      //}
-    }  
+    }
     primeraIteracion = false;
-  } //Controla el movimiento de la pelota en el juego y la detección de colisiones .
+  }  //Controla el movimiento de la pelota en el juego y la detección de colisiones .
 
   void verificarColision() {
     if (posicionPelotaY + diametroPelota / 2 > altoJuego) {
@@ -172,11 +182,7 @@ public:
     reiniciarJuego();
     menu.reiniciarMenu();
     primeraIteracion = true;
-  }  //Procesa el menu.
-
-  bool obtenerEstadoDelJuego() {
-    return estadoDelJuego;
-  }
+  }  //Se reinician las variables del juego y se procesa el menu.
 
   int obtenerPosicionPatineta() {
     return posicionPatineta;
@@ -199,48 +205,49 @@ public:
   }
 };
 
-class Records {
+class RecordsYGrabacion {
 private:
   Menu &menu;
   bool volver;
-  bool confirmarPresionado;
-  bool bandera;
+  bool confirmarEnLow;
 
 public:
-  Records(Menu &menuReferencia)
+  RecordsYGrabacion(Menu &menuReferencia)
     : menu(menuReferencia) {
-    confirmarPresionado = false;
-    bandera = false;
+    volver = false;
+    confirmarEnLow = false;
   }  //Constructor.
 
 public:
   void volverAlMenu() {
-    if (digitalRead(pinConfirmar) == LOW) {
-      bandera = true;
+    if (digitalRead(pinBotonConfirmar) == LOW) {
+      confirmarEnLow = true;
     }
-    if (bandera == true) {
-      volver = digitalRead(pinConfirmar);
+    if (confirmarEnLow == true) {
+      volver = digitalRead(pinBotonConfirmar);
       if (volver == HIGH) {
         menu.reiniciarMenu();
-        bandera = false;
-        delay(200);
+        confirmarEnLow = false;
+        enviandoGrabacion = true;
       }
     }
-  }
+  }  // Método para volver al menu luego de ingresar a la opcion records o grabacion
 };
 
 Menu menu;
 Juego juego(menu);
-Records records(menu);
+RecordsYGrabacion recordsYGrabacion(menu);
 
 void setup() {
   pinMode(pinBotonIzquierda, INPUT);
   pinMode(pinBotonDerecha, INPUT);
-  pinMode(pinConfirmar, INPUT);
+  pinMode(pinBotonConfirmar, INPUT);
+  pinMode(pinBotonRec, INPUT);
 
   pinMode(pinLedIzquierda, OUTPUT);
   pinMode(pinLedDerecha, OUTPUT);
   pinMode(pinLedConfirmar, OUTPUT);
+  pinMode(pinLedRec, OUTPUT);
 
   for (int i = 0; i < 7; i++) {
     pinMode(segmentos[i], OUTPUT);
@@ -249,6 +256,7 @@ void setup() {
 
   // Semilla aleatoria para la generación de la pelota
   randomSeed(analogRead(0));
+
   // Inicialización de la comunicación serial
   Serial.begin(9600);
 }
@@ -258,11 +266,33 @@ void loop() {
   menu.actualizar();
 
   if (menu.obtenerEstadoMenu() == JUGAR && menu.obtenerConfirmarPresionado() == true) {
+
+    if (controlIndiceGrabacion == true) {
+      indiceGrabacion = 0;
+      controlIndiceGrabacion = false;
+    }  // Define indiceGrabacion = 0, para "sobreescribir" en el array la informacion cada vez que empezamos un juego nuevo.
+
     juego.actualizar();
+
+    if (indiceGrabacion < memoriaArray) {
+      grabacion[indiceGrabacion].posicionPatinetaRec = juego.obtenerPosicionPatineta();
+      grabacion[indiceGrabacion].posicionPelotaXRec = juego.obtenerPosicionPelotaX();
+      grabacion[indiceGrabacion].posicionPelotaYRec = juego.obtenerPosicionPelotaY();
+      indiceGrabacion++;
+    }  // Guarda los datos de un juego en el array, haciendo uso de la "memoria de arduino", hasta cierto valor.
+
+  } else {
+    for (int i = 0; i < 7; i++) {
+      if (numeroDigitos[10][i] == 1) {
+        digitalWrite(segmentos[i], HIGH);
+      } else {
+        digitalWrite(segmentos[i], LOW);
+      }
+    }
   }
 
   if (menu.obtenerEstadoMenu() == RECORDS && menu.obtenerConfirmarPresionado() == true) {
-    records.volverAlMenu();
+    recordsYGrabacion.volverAlMenu();
   }
 
   if (Serial.available() > 0) {
@@ -285,14 +315,12 @@ void loop() {
         }
       }
     }
-  }
+  }  // Si se recibe informacion desde Processing sobre el puntaje, lo mostramos en el display.
 
   // Enviamos la información a través de la comunicación serial
   Serial.print(menu.obtenerEstadoMenu());
   Serial.print(",");
   Serial.print(menu.obtenerConfirmarPresionado());
-  Serial.print(",");
-  Serial.print(juego.obtenerEstadoDelJuego());
   Serial.print(",");
   Serial.print(juego.obtenerPosicionPatineta());
   Serial.print(",");
@@ -303,6 +331,30 @@ void loop() {
   Serial.print(juego.obtenerPuntaje());
   Serial.print(",");
   Serial.print(juego.obtenerIntroducirNombre());
+
+  if (menu.obtenerEstadoMenu() == GRABACION && menu.obtenerConfirmarPresionado() == true) {
+
+    if (enviandoGrabacion == true) {
+      for (int i = 0; i < indiceGrabacion; i++) {
+        Serial.print(",");
+        Serial.print(grabacion[i].posicionPatinetaRec);
+        Serial.print(",");
+        Serial.print(grabacion[i].posicionPelotaXRec);
+        Serial.print(",");
+        Serial.print(grabacion[i].posicionPelotaYRec);
+      }
+    }  // Envio por comunicacion serial informacion del array grabacion
+
+    if (Serial.available() > 0) {
+      int detener = Serial.read();
+      if (detener == 10) {
+        enviandoGrabacion = false;
+      }
+    }  // Si recibo un 10, detengo el envio de informacion del array grabacion
+
+    recordsYGrabacion.volverAlMenu();
+  }
+
   Serial.println();
   delay(30);
 }
