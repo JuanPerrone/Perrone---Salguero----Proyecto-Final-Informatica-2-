@@ -191,7 +191,7 @@ public:
   int obtenerPosicionPelotaX() {
     return posicionPelotaX;
   }
-
+  
   int obtenerPosicionPelotaY() {
     return posicionPelotaY;
   }
@@ -249,9 +249,9 @@ void setup() {
   pinMode(pinLedConfirmar, OUTPUT);
   pinMode(pinLedRec, OUTPUT);
 
-  for (int i = 0; i < 7; i++) {
-    pinMode(segmentos[i], OUTPUT);
-    digitalWrite(segmentos[i], LOW);
+  for (int contador = 0; contador < 7; contador++) {
+    pinMode(segmentos[contador], OUTPUT);
+    digitalWrite(segmentos[contador], LOW);
   }  // Apaga todos los segmentos inicialmente
 
   // Semilla aleatoria para la generación de la pelota
